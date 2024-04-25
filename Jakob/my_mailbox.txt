@@ -1,0 +1,12 @@
+From: agupta@abc.be
+To: ng@abc.be
+Subject: This week's lab assignment
+This week begins lab session-2.
+Let us do something interesting in this assignment.
+.
+From: agupta@abc.be
+To: ng@abc.be
+Subject: This week's lab assignment
+This week begins lab session-2.
+Let us do something interesting in this assignment.
+.

@@ -1,18 +1,13 @@
 import sys
+import json
+
+USER_PATH = "userinfo.json"
 
 
 def main(ip):
     succesful = False
     while not succesful:
-        username = input("Please enter username: ")
-        password = input("Please enter password: ")
-        if (len(username.split(" ")) > 1) or (len(password.split(" ")) > 1):
-            print("Username or password may not contain spaces, please try again.")
-        else:
-            fh = open('userinfo.txt', "a")
-            fh.write(username + " " + password + "\n")
-            print("Login succesful!")
-            succesful = True
+        succesful = registration()
     print("Please choose one of the following options.\n")
     while True:
         print("a) Mail Sending\nb) Mail Management\nc) Mail Searching\nd) Exit")
@@ -29,6 +24,19 @@ def main(ip):
         else:
             print("The requested action does not exist, please try again")
 
+
+def registration():
+    username = input("Please enter username: ")
+    password = input("Please enter password: ")
+    if (len(username.split(" ")) > 1) or (len(password.split(" ")) > 1):
+        print("Username or password cannot contain spaces, please try again.")
+        return False
+    else:
+        userlist = readFile(USER_PATH)
+        userlist.append(username + " " + password)
+        writeFile(USER_PATH, userlist)
+        print("Login succesful!")
+        return True
 
 def mailSending():
     print("please enter the mail:")
@@ -61,7 +69,8 @@ def messageFormatChecker(message) -> tuple[str, str | None]:
 
     # Check the format of the first line.
     sender = format[0].split(":")
-    if len(sender != 2):
+
+    if len(sender) != 2:
         error_message = "Expected 'From: <username>@<domain name>', but received '" + \
             str(format[0]) + "'."
         return False, error_message
@@ -71,19 +80,20 @@ def messageFormatChecker(message) -> tuple[str, str | None]:
     if not sender[1].startswith(" "):
         error_message = "There should be a whitespace between 'From:' and '<username>@<domain name>'."
         return False, error_message
+    print(sender[1].split("@"))
     if len(sender[1].split("@")) != 2:
         error_message = "Expected that the sender exists out of two fields sperated by '@': '<username>' and '<domain name>'."
         return False, error_message
     username, domain_name = sender[1].split("@")
     if (len(username[1:].split(" ")) != 1):
-        error_message = "Username should not begin with a whitespace."
+        error_message = "Username should not include a whitespace."
         return False, error_message
     if (len(domain_name.split(".")) != 2):
         error_message = "<domain name> should only have one appendix starting with '.' ."
         return False, error_message
 
     # Check the format of the second line.
-    receiver = format[1].plist(":")
+    receiver = format[1].split(":")
     if len(receiver) != 2:
         error_message = "Expected 'To: <username>@<domain name>', but received '" + \
             str(format[1]) + "'."
@@ -99,7 +109,7 @@ def messageFormatChecker(message) -> tuple[str, str | None]:
         return False, error_message
     username, domain_name = receiver[1].split("@")
     if (len(username[1:].split(" ")) != 1):
-        error_message = "Username should not begin with a whitespace."
+        error_message = "Username should not include a whitespace."
         return False, error_message
     if (len(domain_name.split(".")) != 2):
         error_message = "<domain name> should only have one appendix starting with '.' ."
@@ -118,10 +128,10 @@ def messageFormatChecker(message) -> tuple[str, str | None]:
         error_message = "There should be a whitespace between 'Subject:' and '<subject string>'."
         return False, error_message
     if len(subject[1][1:].split(" ")) != 1:
-        error_message = "The '<subject string>' should not begin with a whitespace."
+        error_message = "The '<subject string>' should not include a whitespace."
         return False, error_message
-    if len(subject[1] > 50):
-        error_message = "The '<subject string>' should be no longer than 5° characters."
+    if len(subject[1]) > 50:
+        error_message = "The '<subject string>' should be no longer than 50 characters."
         return False, error_message
 
     # Check if there is a full stop at the end, and if it is the only one.
@@ -129,13 +139,22 @@ def messageFormatChecker(message) -> tuple[str, str | None]:
         error_message = "The message should end with a new line containing nothing but a full stop."
         return False, error_message
     for i in range(0, len(format)):
-        if format(i) == "." and i != len(format) - 1:
+        if format[i] == "." and i != len(format) - 1:
             error_message = "There was an empty line containing nothing but a full stop at line " + \
-                str(i) + ". Only the last line can be a full stop."
+                str(i + 1) + ". Only the last line can be a full stop."
             return False, error_message
 
     return True, error_message
 
+
+def readFile(path):
+    fh = open(path, "r")
+    return json.loads(fh.read())
+
+def writeFile(path, data):
+    fh = open(path, "w")
+    fh.write(json.dumps(data, indent=2))
+    fh.close
 
 if __name__ == "__main__":
     if len(sys.argv) - 1 != 1:

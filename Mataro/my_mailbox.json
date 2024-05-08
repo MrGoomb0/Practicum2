@@ -1,0 +1,16 @@
+[
+  {
+    "From": "test@test.com",
+    "To": "test2@test2.com",
+    "Subject": "Test",
+    "Received": "2016-01-01 12:30",
+    "Body": "This is a test email"
+  },
+  {
+    "From": "test@test.com",
+    "To": "test2@test2.com",
+    "Subject": "Test",
+    "Received": "2016-01-01 15:30",
+    "Body": "This is a test email 2"
+  }
+]

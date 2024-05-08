@@ -1,18 +1,24 @@
-{
-    "From": "Eddy",
-    "To": "Jakon",
-    "Subject": "Testmail",
-    "Message": "testis heht leven\nTest\n."
-},
-{
-  "From": "Eddy",
-  "To": "Jakon",
-  "Subject": "Testmail",
-  "Message": "testis heht leven\nTest\n."
-},
-{
-  "From": "Eddy",
-  "To": "Jakon",
-  "Subject": "Testmail",
-  "Message": "testis heht leven\nTest\n."
-}
+[
+  {
+    "From": "Mataro@test.com",
+    "To": "Jakob@test.com",
+    "Subject": "test",
+    "Received": "2024-05-08 16:16",
+    "Body": "This is a test mail, is the JSON working?\r\n"
+  },
+  {
+    "From": "Mataro@test.com",
+    "To": "Jakob@test.com",
+    "Subject": "test",
+    "Received": "2024-05-08 16:22",
+    "Body": "Another testChecking multiline messagesbeepboep"
+  },
+  {
+    "From": "Mataro@test.com",
+    "To": "Jakob@test.com",
+    "Subject": "Test",
+    "Received": "2024-05-08 16:23",
+    "Body": "Another multiline test Previous one had missing spaces Hopefully this works "
+  }
+]
+

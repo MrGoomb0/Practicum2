@@ -38,6 +38,7 @@ def registration():
         print("Login succesful!")
         return True
 
+
 def mailSending():
     print("please enter the mail:")
     message = input()
@@ -151,10 +152,12 @@ def readFile(path):
     fh = open(path, "r")
     return json.loads(fh.read())
 
+
 def writeFile(path, data):
     fh = open(path, "w")
     fh.write(json.dumps(data, indent=2))
     fh.close
+
 
 if __name__ == "__main__":
     if len(sys.argv) - 1 != 1:
@@ -163,4 +166,3 @@ if __name__ == "__main__":
     # Check toevoegen om te kijken of het argument een integer is.
     ip = int(sys.argv[1])
     main(ip)
-

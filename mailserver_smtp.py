@@ -5,7 +5,7 @@ import json
 import datetime
 
 # Run server on localhost
-HOST_SERVER = 'localhost'
+HOST_SERVER = ''
 
 
 def main(port: int):
@@ -48,7 +48,7 @@ def handle_client(client_socket: socket.socket, client_address: str):
                 '250 OK Hello {} \r\n'.format(data[5:].strip()).encode('utf-8'))
         elif command == 'MAIL_FROM:':
             client_socket.sendall('250 {}\r\n'.format(
-                data[5:].strip()).encode('utf-8'))
+                data[11:].strip()).encode('utf-8'))
         elif command == 'RCPT_TO:':
             client_socket.sendall('250 Recipient OK\r\n'.encode('utf-8'))
         elif command == 'DATA':
@@ -69,11 +69,10 @@ def handle_client(client_socket: socket.socket, client_address: str):
             client_socket.close()
             break
         else:
-            client_socket.sendall(f'500 Command not recognized "{
-                                  command}"\r\n'.encode('utf-8'))
+            client_socket.sendall('500 Command not recognized' + str(command) + '\r\n'.encode('utf-8'))
 
 
-def process_mail(data: [str]):
+def process_mail(data: list[str]):
     sender = data[0].split(' ')[1].strip()
     receiver = data[1].split(' ')[1].strip()
     subject = data[2].split(' ')[1].strip()

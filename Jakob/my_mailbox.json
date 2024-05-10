@@ -1,24 +1,65 @@
 [
-  {
-    "From": "Mataro@test.com",
-    "To": "Jakob@test.com",
-    "Subject": "test",
-    "Received": "2024-05-08 16:16",
-    "Body": "This is a test mail, is the JSON working?\r\n"
-  },
-  {
-    "From": "Mataro@test.com",
-    "To": "Jakob@test.com",
-    "Subject": "test",
-    "Received": "2024-05-08 16:22",
-    "Body": "Another testChecking multiline messagesbeepboep"
-  },
-  {
-    "From": "Mataro@test.com",
-    "To": "Jakob@test.com",
-    "Subject": "Test",
-    "Received": "2024-05-08 16:23",
-    "Body": "Another multiline test Previous one had missing spaces Hopefully this works "
-  }
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-08 16:16",
+        "Body": "This is a test mail, is the JSON working?\r\n"
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-08 16:22",
+        "Body": "Another testChecking multiline messagesbeepboep"
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "Test",
+        "Received": "2024-05-08 16:23",
+        "Body": "Another multiline test Previous one had missing spaces Hopefully this works "
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-11 00:49",
+        "Body": "hello multi line . "
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-11 00:59",
+        "Body": "final test hopefully . "
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "locktest",
+        "Received": "2024-05-11 01:17",
+        "Body": "test for the locks . "
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-11 01:20",
+        "Body": "hello . "
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-11 01:24",
+        "Body": "test . "
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-11 01:27",
+        "Body": "hello . "
+    }
 ]
-

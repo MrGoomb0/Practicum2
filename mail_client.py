@@ -15,6 +15,12 @@ ERROR_MESSAGE = "The server did not react as expected, please try again later."
 
 
 def main(ip):
+    """
+    Starts a client who connects to servers on the given IP.
+
+    Args:
+    ip (str): The IP to connect with servers.
+    """
     succesful = False
     while not succesful:
         succesful = registrationAndLogin()
@@ -36,6 +42,9 @@ def main(ip):
 
 
 def registrationAndLogin():
+    """
+    Handles the local registration/ login of a new client.
+    """
     print("Please choose one of the following options.\n")
     while True:
         print("a) Register\nb) Login")
@@ -102,6 +111,12 @@ def registrationAndLogin():
 
 
 def createConnectionSMTP(ip):
+    """
+    Connects the client with the SMTP-server on the given IP.
+
+    Args:
+    ip: IP to connect with the server.
+    """
     client = socket.create_connection((ip, SMTP_PORT))
     response = 0
     p = 1
@@ -135,6 +150,12 @@ def createConnectionSMTP(ip):
                 return False, None
 
 def createConnectionPOP3(ip):
+    """
+    Connects the client with the POP3-server on the given IP.
+
+    Args:
+    ip: IP to connect with the server.
+    """
     client = socket.create_connection((ip, POP3_PORT))
     p = 1
     while True:
@@ -161,6 +182,16 @@ def createConnectionPOP3(ip):
 def sendMailToServer(
     client: socket, sender: str, receiver: str, subject: str, message: str
 ) -> bool:
+    """
+    Sends a mail through the SMTP-server to another client.
+    
+    Args:
+    client: The socket object of the client.
+    sender: The address of the sender.
+    receiver: The address of the receiver.
+    subject: The subject of the message.
+    message: The message itself.
+    """
     client.sendall(("MAIL_FROM: " + str(sender)).encode())
     response = 0
     while True:
@@ -189,6 +220,12 @@ def sendMailToServer(
 
 
 def mailSending(ip) -> bool:
+    """
+    Handles the UI of the 'Mail Sending' action.
+
+    Args:
+    ip: IP to connect with the server.
+    """
     succesfull, client = createConnectionSMTP(ip)
     if not succesfull:
         print(UNAVAILABLE_MESSAGE)
@@ -224,6 +261,14 @@ def mailSending(ip) -> bool:
 
 
 def serverAuthentication(client: socket, username: str, password: str):
+    """
+    Handles authentication of a user through the POP3 server.
+
+    Args:
+    client: The socket object for the client.
+    username:  The username used for the authentication.
+    password: The password used for the authentication.
+    """
     client.send(("USER " + str(username)).encode())
     response = 0
     while True:
@@ -245,6 +290,12 @@ def serverAuthentication(client: socket, username: str, password: str):
 
 
 def mailManagement(ip):
+    """
+    Handles the UI of the 'Mail Management' action.
+
+    Args:
+    ip: IP to connect with the server.
+    """
     username = input("Please insert username: ")
     password = input("Please insert password: ")
     succesfull, client = createConnectionPOP3(ip)
@@ -386,6 +437,12 @@ def mailManagement(ip):
 
 
 def mailSearching(ip):
+    """
+    Handles the UI of the 'Mail Searching' action.
+
+    Args:
+    ip: IP to connect with the server.
+    """
     username = input("Please insert username: ")
     password = input("Please insert password: ")
     succesfull, client = createConnectionPOP3(ip)
@@ -449,6 +506,12 @@ def mailSearching(ip):
 
 
 def messageFormatChecker(message):
+    """
+    Checks if a given message is of the correct format.
+
+    Args:
+    message: The messages whose format is checked.
+    """
     formatted_sender = None
     formatted_receiver = None
     formatted_subject = None
@@ -681,11 +744,24 @@ def messageFormatChecker(message):
 
 
 def readFile(path):
+    """
+    Function to open a JSON file.
+
+    Args:
+    path: Location of the JSON file.
+    """
     fh = open(path, "r")
     return json.loads(fh.read())
 
 
 def writeFile(path, data):
+    """
+    Function to wrtie to a JSON file.
+
+    Args:
+    path: Location of the JSON file.
+    data: Data to write to the JSON file.
+    """
     fh = open(path, "w")
     fh.write(json.dumps(data, indent=2))
     fh.close

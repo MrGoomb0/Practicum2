@@ -87,7 +87,7 @@ def registrationAndLogin():
                 if username == user.split(' ')[0]:
                     if password == user.split(' ')[1]:
                         lock.release()
-                        print("Login succesfull")
+                        print("Login succesfull!")
                         return True
                     else:
                         lock.release()
@@ -187,7 +187,7 @@ def mailSending(ip) -> bool:
     if not formatted_correctly:
         print("This is an incorrect format.")
         print(error_message)
-        client.send(("QUIT").encode())
+        client.sendall(("QUIT").encode())
         return False
     else:
         succesfull = sendMailToServer(client, sender, receiver, subject, message)
@@ -446,7 +446,7 @@ def messageFormatChecker(message):
             formatted_subject,
         )
 
-    formatted_sender = sender[1]
+    formatted_sender = sender[1][1:]
 
     # Check the format of the second line.
     receiver = format[1].split(":")
@@ -514,7 +514,7 @@ def messageFormatChecker(message):
             formatted_subject,
         )
 
-    formatted_receiver = receiver[1]
+    formatted_receiver = receiver[1][1:]
 
     # Check the third line.
     subject = format[2].split(":")
@@ -570,7 +570,7 @@ def messageFormatChecker(message):
             formatted_subject,
         )
 
-    formatted_subject = subject[1]
+    formatted_subject = subject[1][1:]
 
     # Check if there is a full stop at the end, and if it is the only one.
     if format[-1] != ".":

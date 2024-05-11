@@ -3,6 +3,7 @@ import sys
 import json
 import random
 import time
+import filelock
 
 USER_PATH = "userinfo.json"
 SMTP_PORT = 1025
@@ -15,36 +16,87 @@ ERROR_MESSAGE = "The server did not react as expected, please try again later."
 def main(ip):
     succesful = False
     while not succesful:
-        succesful = registration()
+        succesful = registrationAndLogin()
     print("Please choose one of the following options.\n")
     while True:
         print("a) Mail Sending\nb) Mail Management\nc) Mail Searching\nd) Exit")
         action = input()
-        if action == "Mail Sending":
+        if action.startswith('a)'):
             mailSending(ip)
-        elif action == "Mail Management":
+        elif action.startswith('b)'):
             mailManagement(ip)
-        elif action == "Mail Searching":
+        elif action.startswith('c)'):
             mailSearching(ip)
-        elif action == "Exit":
+        elif action.startswith('d)'):
             print("Exiting program.")
             exit()
         else:
             print("The requested action does not exist, please try again")
 
 
-def registration():
-    username = input("Please enter username: ")
-    password = input("Please enter password: ")
-    if (len(username.split(" ")) > 1) or (len(password.split(" ")) > 1):
-        print("Username or password cannot contain spaces, please try again.")
-        return False
-    else:
-        userlist = readFile(USER_PATH)
-        userlist.append(username + " " + password)
-        writeFile(USER_PATH, userlist)
-        print("Registration succesful!")
-        return True
+def registrationAndLogin():
+    print("Please choose one of the following options.\n")
+    while True:
+        print("a) Register\nb) Login")
+        action = input()
+        if action.startswith("a)"):
+            username = input("Please enter username: ")
+            if (len(username.split(" ")) > 1):
+                print("Username cannot contain spaces, please try again.")
+                return False
+            lock = filelock.FileLock(USER_PATH + ".lock", timeout=1)
+            succesful = False
+            while not succesful:
+                try:
+                    lock.acquire(blocking=False)
+                    succesful = True
+                except:
+                    time.sleep(1.0)
+            userlist = readFile(USER_PATH)
+            for user in userlist:
+                if username == user.split(" ")[0]:
+                    print("Username already in use, please try again.")
+                    lock.release()
+                    return False
+            password = input("Please enter password: ")
+
+            if (len(password.split(" ")) > 1):
+                print("Password cannot contain spaces, please try again.")
+                lock.release()
+                return False
+            else:
+                userlist.append(username + " " + password)
+                writeFile(USER_PATH, userlist)
+                lock.release()
+                print("Registration succesful!")
+                return True
+            
+        if action.startswith("b)"):
+            username = input("Please enter username: ")
+            password = input("Please enter password: ")
+            lock = filelock.FileLock(USER_PATH + ".lock", timeout=1)
+            succesful = False
+            while not succesful:
+                try:
+                    lock.acquire(blocking=False)
+                    succesful = True
+                except:
+                    time.sleep(1.0)
+            userlist = readFile(USER_PATH)
+            for user in userlist:
+                if username == user.split(' ')[0]:
+                    if password == user.split(' ')[1]:
+                        lock.release()
+                        print("Login succesfull")
+                        return True
+                    else:
+                        lock.release()
+                        print("Incorrect password, please try again.")
+                        return False
+            lock.release()
+            print("Username not known, please try registring.")
+            return False
+
 
 
 def createConnection(ip, port):

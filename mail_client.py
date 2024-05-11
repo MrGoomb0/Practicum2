@@ -21,13 +21,13 @@ def main(ip):
     while True:
         print("a) Mail Sending\nb) Mail Management\nc) Mail Searching\nd) Exit")
         action = input()
-        if action.startswith('a)'):
+        if action.startswith("a)"):
             mailSending(ip)
-        elif action.startswith('b)'):
+        elif action.startswith("b)"):
             mailManagement(ip)
-        elif action.startswith('c)'):
+        elif action.startswith("c)"):
             mailSearching(ip)
-        elif action.startswith('d)'):
+        elif action.startswith("d)"):
             print("Exiting program.")
             exit()
         else:
@@ -41,7 +41,7 @@ def registrationAndLogin():
         action = input()
         if action.startswith("a)"):
             username = input("Please enter username: ")
-            if (len(username.split(" ")) > 1):
+            if len(username.split(" ")) > 1:
                 print("Username cannot contain spaces, please try again.")
                 return False
             lock = filelock.FileLock(USER_PATH + ".lock", timeout=1)
@@ -60,7 +60,7 @@ def registrationAndLogin():
                     return False
             password = input("Please enter password: ")
 
-            if (len(password.split(" ")) > 1):
+            if len(password.split(" ")) > 1:
                 print("Password cannot contain spaces, please try again.")
                 lock.release()
                 return False
@@ -70,7 +70,7 @@ def registrationAndLogin():
                 lock.release()
                 print("Registration succesful!")
                 return True
-            
+
         if action.startswith("b)"):
             username = input("Please enter username: ")
             password = input("Please enter password: ")
@@ -84,8 +84,8 @@ def registrationAndLogin():
                     time.sleep(1.0)
             userlist = readFile(USER_PATH)
             for user in userlist:
-                if username == user.split(' ')[0]:
-                    if password == user.split(' ')[1]:
+                if username == user.split(" ")[0]:
+                    if password == user.split(" ")[1]:
                         lock.release()
                         print("Login succesfull!")
                         return True
@@ -96,7 +96,6 @@ def registrationAndLogin():
             lock.release()
             print("Username not known, please try registring.")
             return False
-
 
 
 def createConnection(ip, port):
@@ -111,7 +110,7 @@ def createConnection(ip, port):
             and server_message.endswith("Service Ready\r\n")
         ):
             hostname = server_message.split(" ")[1]
-            client.send(("HELO " + str(hostname)).encode("utf-8"))
+            client.sendall(("HELO " + str(hostname)).encode("utf-8"))
             response += 1
         elif response == 1 and server_message.startswith(
             "250 OK Hello " + str(hostname)
@@ -134,16 +133,16 @@ def createConnection(ip, port):
 def sendMailToServer(
     client: socket, sender: str, receiver: str, subject: str, message: str
 ) -> bool:
-    client.send(("MAIL_FROM:" + str(sender)).encode())
+    client.sendall(("MAIL_FROM:" + str(sender)).encode())
     response = 0
     while True:
         server_message = client.recv(1012).decode("utf-8")
         if response == 0 and server_message.startswith("250" + str(sender)):
             response += 1
-            client.send(("RCPT_TO: " + str(receiver)).encode())
+            client.sendall(("RCPT_TO: " + str(receiver)).encode())
         elif response == 1 and server_message.startswith("250 Recipient OK"):
             response += 1
-            client.send(("DATA").encode())
+            client.sendall(("DATA").encode())
         elif response == 2 and server_message.startswith(
             '354 Enter mail, end with "." on a line by itself'
         ):
@@ -151,11 +150,11 @@ def sendMailToServer(
             print("start message loading")
             print(message)
             for line in range(0, len(message)):
-                client.send((message[line] + "\r\n").encode())
+                client.sendall((message[line] + "\r\n").encode())
         elif response == 3 and server_message.startswith(
             "250 OK Message accepted for delivery"
         ):
-            client.send(("QUIT").encode())
+            client.sendall(("QUIT").encode())
             return True
         else:
             print(ERROR_MESSAGE)
@@ -204,7 +203,7 @@ def serverAuthentication(client: socket, username: str, password: str):
     while True:
         server_message = client.recv(1012).decode("utf-8")
         if response == 0 and server_message.startswith("+OK"):
-            client.send(("PASS " + str(password)).encode())
+            client.sendall(("PASS " + str(password)).encode())
             response += 1
         if response == 1 and server_message.startswith("+OK"):
             print(server_message)
@@ -213,7 +212,7 @@ def serverAuthentication(client: socket, username: str, password: str):
             print("Incorrect credentials, please try again.")
             username = input("Please insert username: ")
             password = input("Please insert password: ")
-            client.send(("USER" + str(username)).encode())
+            client.sendall(("USER" + str(username)).encode())
 
 
 def mailManagement(ip):
@@ -243,7 +242,7 @@ def mailManagement(ip):
     while True:
         command = input("/")
         if command.startswith("STAT"):
-            client.send("STAT".encode())
+            client.sendall("STAT".encode())
             status = client.recv(1012)
             status = status.slit(" ")
             count = status[1]
@@ -256,7 +255,7 @@ def mailManagement(ip):
                 if not command[1].isnumeric():
                     print("Argument of 'LIST' should be 'None' or 'int'.")
                 else:
-                    client.send("LIST " + command[1])
+                    client.sendall("LIST " + command[1])
                     server_message = client.recv(1012).decode("utf-8")
                     if server_message.startswith("+OK"):
                         server_message = server_message.split(" ")
@@ -270,7 +269,7 @@ def mailManagement(ip):
                     else:
                         print("Invalid message number.\n")
             else:
-                client.send("LIST")
+                client.sendall("LIST")
                 server_message = client.recv(1012).decode("utf-8")
                 if server_message == ".\r\n":
                     print("No messages found.")
@@ -300,7 +299,7 @@ def mailManagement(ip):
             elif not command[1].isnumeric():
                 print("Argument of 'RETR' should be integer")
             else:
-                client.send("RETR " + str(command[1]) + "\r\n")
+                client.sendall("RETR " + str(command[1]) + "\r\n")
                 server_message = client.recv(1012)
                 if server_message.startswith("-ERR"):
                     print("Invalid message number.")
@@ -318,16 +317,16 @@ def mailManagement(ip):
             elif not command[1].isnumeric():
                 print("Argument of 'DELE' should be integer")
             else:
-                client.send("DELE " + str(command[1]) + "\r\n")
+                client.sendall("DELE " + str(command[1]) + "\r\n")
                 server_message = client.recv(1012)
                 if server_message.startswith("-ERR"):
                     print("Invalid message number.")
                 else:
                     print("Message marked as 'deleted'.")
         elif command.startswith("RSET"):
-            client.send("RSET\r\n")
+            client.sendall("RSET\r\n")
         elif command.startswith("QUIT"):
-            client.send(("QUIT").encode())
+            client.sendall(("QUIT").encode())
             return
         else:
             print("Invalid command, please try again.\n")

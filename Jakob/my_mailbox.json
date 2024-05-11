@@ -61,5 +61,12 @@
         "Subject": "test",
         "Received": "2024-05-11 01:27",
         "Body": "hello . "
+    },
+    {
+        "From": "Mataro@test.com",
+        "To": "Jakob@test.com",
+        "Subject": "test",
+        "Received": "2024-05-11 16:39",
+        "Body": "hello "
     }
 ]

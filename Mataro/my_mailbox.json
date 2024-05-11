@@ -1,16 +1,1 @@
-[
-  {
-    "From": "test@test.com",
-    "To": "test2@test2.com",
-    "Subject": "Test",
-    "Received": "2016-01-01 12:30",
-    "Body": "This is a test email"
-  },
-  {
-    "From": "test@test.com",
-    "To": "test2@test2.com",
-    "Subject": "Test",
-    "Received": "2016-01-01 15:30",
-    "Body": "This is a test email 2"
-  }
-]
+[{"From": "test@test.com", "To": "test2@test2.com", "Subject": "Test", "Received": "2016-01-01 12:30", "Body": "This is a test email"}, {"From": "Jakob@test.com", "To": "Mataro@test.com", "Subject": "testtesttest", "Received": "2024-05-11 16:46", "Body": "hello there beepboep "}]

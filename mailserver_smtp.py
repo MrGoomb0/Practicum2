@@ -11,6 +11,12 @@ HOST_SERVER = ''
 
 
 def main(port: int):
+    """
+    Starts the SMTP server on the specified port.
+
+    Args:
+    port (int): The port number on which the server will listen.
+    """
     addr = (HOST_SERVER, port)
     print(f'Starting SMTP server on port {port}')
     if socket.has_dualstack_ipv6():
@@ -28,6 +34,13 @@ def main(port: int):
 
 
 def handle_client(client_socket: socket.socket, client_address: str):
+    """
+    Handles client requests and processes SMTP commands.
+
+    Args:
+    client_socket: The socket object for the client.
+    client_address: The address of the client.
+    """
     print(f'Handling connection from {client_address}')
 
     # 220 is the code for "Service ready" in SMTP also everything should end with \r\n
@@ -71,6 +84,15 @@ def handle_client(client_socket: socket.socket, client_address: str):
 
 
 def process_buffer(data: str):
+    """
+    Processes the buffer and returns the commands.
+
+    Args:
+    data (str): The buffer data.
+
+    Returns:
+    list[str]: The list of commands.
+    """
     print(f'Processing buffer: "{data}"')
     commands = [command for command in data.split('\r\n') if command != '']
     print(commands)
@@ -78,6 +100,12 @@ def process_buffer(data: str):
 
 
 def process_mail(data: list[str]):
+    """
+    Processes the mail data and appends it to the user's mailbox.
+
+    Args:
+    data (list[str]): The mail data.
+    """
     print(f'Processing mail: {data}')
     sender = data[0].split(' ')[1].strip()
     receiver = data[1].split(' ')[1].strip()
@@ -99,6 +127,13 @@ def process_mail(data: list[str]):
 
 
 def append(incoming_message: str, user: str):
+    """
+    Appends the incoming message to the user's mailbox.
+
+    Args:
+    incoming_message (str): The incoming message.
+    user (str): The user to whom the message belongs.
+    """
     file_path = f"{user}/my_mailbox.json"
     lock = filelock.FileLock(f"{user}/my_mailbox.json.lock", timeout=1)
     try:

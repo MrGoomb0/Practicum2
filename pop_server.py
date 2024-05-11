@@ -4,10 +4,16 @@ import threading
 import json
 import filelock
 
-HOST_SERVER = ''
+HOST_SERVER = ''  # Empty means all available interfaces
 
 
 def main(port: int):
+    """
+    Starts the POP server on the specified port.
+
+    Args:
+    port (int): The port number on which the server will listen.
+    """
     addr = (HOST_SERVER, port)
     print(f'Starting POP server on port {port}')
     if socket.has_dualstack_ipv6():
@@ -25,6 +31,13 @@ def main(port: int):
 
 
 def handle_client(client_socket, client_address):
+    """
+    Handles client requests and processes POP commands.
+
+    Args:
+    client_socket: The socket object for the client.
+    client_address: The address of the client.
+    """
     client_socket.sendall(b"+OK POP3 server ready\r\n")
     delete_index = set()
     user = ''
@@ -81,6 +94,15 @@ def handle_client(client_socket, client_address):
 
 
 def proccess_user_command(command: str):
+    """
+    Processes the USER command to verify user's existence.
+
+    Args:
+    command (str): The entire command received on the socket
+
+    Returns:
+    bool: True if user is found, False otherwise.
+    """
     user = command.split(' ')[1]
     # Need to check lock so we dont read when another thread is writing
     acquire_lock('userinfo.json')
@@ -96,6 +118,15 @@ def proccess_user_command(command: str):
 
 
 def process_pass_command(command: str):
+    """
+    Processes the PASS command to verify user's password.
+
+    Args:
+    command (str): The entire command received on the socket
+
+    Returns:
+    bool: True if password is correct, False otherwise.
+    """
     password = command.split(' ')[1]
     acquire_lock('userinfo.json')
     with open('userinfo.json', 'r') as file:
@@ -109,6 +140,16 @@ def process_pass_command(command: str):
 
 
 def process_stat_command(command: str, user):
+    """
+    Processes the STAT command to get the number of messages and total bytes.
+
+    Args:
+    command (str): The entire command received on the socket
+    user (str): The user that is logged in.
+
+    Returns:
+    tuple: A tuple containing the number of messages and the total bytes.
+    """
     acquire_lock(f'{user}/my_mailbox.json')
     with open(f'{user}/my_mailbox.json', 'r') as file:
         data = json.load(file)
@@ -118,7 +159,16 @@ def process_stat_command(command: str, user):
 
 
 def process_list_command(command: str, user) -> list[str]:
-    # Check if there is a message number specified
+    """
+    Processes the LIST command to get the list of messages.
+
+    Args:
+    command (str): The entire command received on the socket
+    user (str): The user that is logged in.
+
+    Returns:
+    list: A list of strings containing the response to the LIST command.
+    """
     response = []
     acquire_lock(f'{user}/my_mailbox.json')
     if len(command.split(' ')) == 1:
@@ -146,6 +196,16 @@ def process_list_command(command: str, user) -> list[str]:
 
 
 def process_retr_command(command: str, user):
+    """
+    Processes the RETR command to get the content of a message.
+
+    Args:
+    command (str): The entire command received on the socket
+    user (str): The user that is logged in.
+
+    Returns:
+    str: The content of the message.
+    """
     acquire_lock(f'{user}/my_mailbox.json')
     index = int(command.split(' ')[1])
     with open(f'{user}/my_mailbox.json', 'r') as file:
@@ -159,6 +219,13 @@ def process_retr_command(command: str, user):
 
 
 def process_quit_command(indices, user):
+    """
+    Processes the QUIT command to delete messages and save the mailbox.
+
+    Args:
+    indices (set): A set containing the indices of messages to delete.
+    user (str): The user that is logged in.
+    """
     acquire_lock(f'{user}/my_mailbox.json')
     with open(f'{user}/my_mailbox.json', 'r') as file:
         data = json.load(file)
@@ -169,6 +236,15 @@ def process_quit_command(indices, user):
 
 
 def acquire_lock(path):
+    """
+    Acquires a lock on a file.
+
+    Args:
+    path (str): The path to the file to lock.
+
+    Returns:
+    filelock.FileLock: The lock object.
+    """
     lock = filelock.FileLock(f"{path}.lock", timeout=1)
     try:
         lock.acquire(blocking=False)
@@ -178,6 +254,12 @@ def acquire_lock(path):
 
 
 def release_lock(path):
+    """
+    Releases a lock on a file.
+
+    Args:
+    path (str): The path to the file to lock.
+    """
     lock = filelock.FileLock(f"{path}.lock", timeout=1)
     lock.release()
 
@@ -185,7 +267,5 @@ def release_lock(path):
 if __name__ == "__main__":
     if len(sys.argv) - 1 != 1:
         raise Exception("POP server expects 1 argument, " + str(len(sys.argv - 1)) + " were given.")
-    # Check toevoegen om te kijken of het argument een integer is.
     port = int(sys.argv[1])
-    user = "Jakob"
     main(port)

@@ -5,7 +5,6 @@ import json
 import filelock
 
 HOST_SERVER = ''
-user = ''
 
 
 def main(port: int):
@@ -28,15 +27,17 @@ def main(port: int):
 def handle_client(client_socket, client_address):
     client_socket.sendall(b"+OK POP3 server ready\r\n")
     delete_index = set()
+    user = ''
     try:
         while True:
             data = client_socket.recv(1024).decode()
             print(f"Received data: {data}")
             if not data:
                 break
-            command = data.strip().upper()
+            command = data.strip()
             if command.startswith('USER'):
                 if proccess_user_command(command):
+                    user = command.split(' ')[1]
                     client_socket.sendall(b"+OK User accepted\r\n")
                 else:
                     client_socket.sendall(b"-ERR User not found\r\n")
@@ -46,14 +47,14 @@ def handle_client(client_socket, client_address):
                 else:
                     client_socket.sendall(b"-ERR Authentication failed\r\n")
             elif command.startswith('STAT'):
-                messages, total_bytes = process_stat_command(command)
+                messages, total_bytes = process_stat_command(command, user)
                 client_socket.sendall(f"+OK {messages} {total_bytes}\r\n".encode())
             elif command.startswith('LIST'):
-                response = process_list_command(command)
+                response = process_list_command(command, user)
                 for line in response:
                     client_socket.sendall(f"{line}\r\n".encode())
             elif command.startswith('RETR'):
-                email = process_retr_command(command)
+                email = process_retr_command(command, user)
                 if email:
                     client_socket.sendall(f"+OK {email}\r\n".encode())
                 else:
@@ -66,7 +67,7 @@ def handle_client(client_socket, client_address):
                 delete_index.clear()
                 client_socket.sendall(b"+OK\r\n")
             elif command == 'QUIT':
-                process_quit_command(delete_index)
+                process_quit_command(delete_index, user)
                 client_socket.sendall(b"+OK Goodbye\r\n")
                 break
             else:
@@ -84,6 +85,7 @@ def proccess_user_command(command: str):
     acquire_lock('userinfo.json')
     with open('userinfo.json', 'r') as file:
         data = json.load(file)
+        print(f'Trying to find "{user}" in {data}')
         for entry in data:
             if entry.split(' ')[0] == user:
                 release_lock('userinfo.json')
@@ -105,7 +107,7 @@ def process_pass_command(command: str):
     return False
 
 
-def process_stat_command(command: str):
+def process_stat_command(command: str, user):
     acquire_lock(f'{user}/my_mailbox.json')
     with open(f'{user}/my_mailbox.json', 'r') as file:
         data = json.load(file)
@@ -114,7 +116,7 @@ def process_stat_command(command: str):
         return len(data), total_bytes
 
 
-def process_list_command(command: str) -> [str]:
+def process_list_command(command: str, user) -> [str]:
     # Check if there is a message number specified
     response = []
     acquire_lock(f'{user}/my_mailbox.json')
@@ -142,7 +144,7 @@ def process_list_command(command: str) -> [str]:
     return response
 
 
-def process_retr_command(command: str):
+def process_retr_command(command: str, user):
     acquire_lock(f'{user}/my_mailbox.json')
     index = int(command.split(' ')[1])
     with open(f'{user}/my_mailbox.json', 'r') as file:
@@ -155,7 +157,7 @@ def process_retr_command(command: str):
             return None
 
 
-def process_quit_command(indices):
+def process_quit_command(indices, user):
     acquire_lock(f'{user}/my_mailbox.json')
     with open(f'{user}/my_mailbox.json', 'r') as file:
         data = json.load(file)

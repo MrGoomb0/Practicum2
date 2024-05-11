@@ -4,6 +4,7 @@ import json
 import random
 import time
 import filelock
+import ast
 
 USER_PATH = "userinfo.json"
 SMTP_PORT = 1025
@@ -96,10 +97,12 @@ def registrationAndLogin():
             lock.release()
             print("Username not known, please try registring.")
             return False
+        else:
+            print("The requested action does not exist, please try again")
 
 
-def createConnection(ip, port):
-    client = socket.create_connection((ip, port))
+def createConnectionSMTP(ip):
+    client = socket.create_connection((ip, SMTP_PORT))
     response = 0
     p = 1
     while True:
@@ -110,7 +113,9 @@ def createConnection(ip, port):
             and server_message.endswith("Service Ready\r\n")
         ):
             hostname = server_message.split(" ")[1]
-            client.sendall(("HELO " + str(hostname)).encode("utf-8"))
+            if (hostname == ""):
+                hostname = "localhost"
+            client.sendall(("HELO " + str(hostname)).encode())
             response += 1
         elif response == 1 and server_message.startswith(
             "250 OK Hello " + str(hostname)
@@ -121,7 +126,30 @@ def createConnection(ip, port):
             awake = False
             while not awake:
                 if random.uniform(0, 1) < p:
-                    client = socket.create_connection((ip, port))
+                    client = socket.create_connection((ip, SMTP_PORT))
+                    awake = True
+                else:
+                    time.sleep(random.uniform(0, 1 / p))
+                p = p / 2
+            if p < 0.001:
+                return False, None
+
+def createConnectionPOP3(ip):
+    client = socket.create_connection((ip, POP3_PORT))
+    p = 1
+    while True:
+        server_message = client.recv(1024).decode("utf-8")
+        if (
+            server_message.startswith("+OK")
+            and server_message.endswith("POP3 server ready\r\n")
+        ):
+            return True, client
+        else:
+            client.close()
+            awake = False
+            while not awake:
+                if random.uniform(0, 1) < p:
+                    client = socket.create_connection((ip, POP3_PORT))
                     awake = True
                 else:
                     time.sleep(random.uniform(0, 1 / p))
@@ -133,11 +161,11 @@ def createConnection(ip, port):
 def sendMailToServer(
     client: socket, sender: str, receiver: str, subject: str, message: str
 ) -> bool:
-    client.sendall(("MAIL_FROM:" + str(sender)).encode())
+    client.sendall(("MAIL_FROM: " + str(sender)).encode())
     response = 0
     while True:
         server_message = client.recv(1012).decode("utf-8")
-        if response == 0 and server_message.startswith("250" + str(sender)):
+        if response == 0 and server_message.startswith("250 " + str(sender)):
             response += 1
             client.sendall(("RCPT_TO: " + str(receiver)).encode())
         elif response == 1 and server_message.startswith("250 Recipient OK"):
@@ -147,8 +175,6 @@ def sendMailToServer(
             '354 Enter mail, end with "." on a line by itself'
         ):
             response += 1
-            print("start message loading")
-            print(message)
             for line in range(0, len(message)):
                 client.sendall((message[line] + "\r\n").encode())
         elif response == 3 and server_message.startswith(
@@ -163,7 +189,7 @@ def sendMailToServer(
 
 
 def mailSending(ip) -> bool:
-    succesfull, client = createConnection(ip, SMTP_PORT)
+    succesfull, client = createConnectionSMTP(ip)
     if not succesfull:
         print(UNAVAILABLE_MESSAGE)
         return False
@@ -198,35 +224,55 @@ def mailSending(ip) -> bool:
 
 
 def serverAuthentication(client: socket, username: str, password: str):
-    client.send(("USER" + str(username)).encode())
+    client.send(("USER " + str(username)).encode())
     response = 0
     while True:
-        server_message = client.recv(1012).decode("utf-8")
-        if response == 0 and server_message.startswith("+OK"):
-            client.sendall(("PASS " + str(password)).encode())
-            response += 1
-        if response == 1 and server_message.startswith("+OK"):
-            print(server_message)
-            return True
-        else:
-            print("Incorrect credentials, please try again.")
-            username = input("Please insert username: ")
-            password = input("Please insert password: ")
-            client.sendall(("USER" + str(username)).encode())
+        incomming_data = client.recv(1012).decode()
+        server_messages = [server_message for server_message in incomming_data.split('\r\n') if server_message != '']
+        for server_message in server_messages:
+            if response == 0 and server_message.startswith("+OK"):
+                client.sendall(("PASS " + str(password)).encode())
+                response += 1
+            elif response == 1 and server_message.startswith("+OK POP3 server is ready"):
+                print(server_message)
+                return True
+            else:
+                print("Incorrect credentials, please try again.")
+                username = input("Please insert username: ")
+                password = input("Please insert password: ")
+                client.sendall(("USER " + str(username)).encode())
+                response = 0
 
 
 def mailManagement(ip):
     username = input("Please insert username: ")
     password = input("Please insert password: ")
-    succesfull, client = createConnection(ip, POP3_PORT)
+    succesfull, client = createConnectionPOP3(ip)
     if not succesfull:
         print(UNAVAILABLE_MESSAGE)
         return
     # Tries to authenticate on the POP3 server
     succesfull = serverAuthentication(client, username, password)
 
+    client.sendall("STAT".encode())
+    received = False
+    while not received:
+        incomming_data = client.recv(1012).decode()
+        server_messages = [server_message for server_message in incomming_data.split('\r\n') if server_message != '']
+        for server_message in server_messages:
+            if server_message.startswith("+OK") and server_message.split(" ")[1].isnumeric():
+                message_count = int(server_message.split(" ")[1])
+                received = True
+        
+    emails = []
+
+    for i in range(0, message_count):
+        client.sendall(("RETR " + str(i) + "\r\n").encode())
+        server_message = client.recv(1012).decode('utf-8')
+        if server_message.startswith("+OK"):
+            emails.append(ast.literal_eval(server_message[4:]))
+
     # Shows the emails that are sent through by the POP3 server
-    emails = client.recv(1024).decode("utf-8")
     for n in range(0, len(emails)):
         print(
             str(n)
@@ -243,8 +289,8 @@ def mailManagement(ip):
         command = input("/")
         if command.startswith("STAT"):
             client.sendall("STAT".encode())
-            status = client.recv(1012)
-            status = status.slit(" ")
+            status = client.recv(1012).decode('utf-8')
+            status = status.split(" ")
             count = status[1]
             size = status[2]
             print("Number of emails: " + count + "\n")
@@ -255,110 +301,149 @@ def mailManagement(ip):
                 if not command[1].isnumeric():
                     print("Argument of 'LIST' should be 'None' or 'int'.")
                 else:
-                    client.sendall("LIST " + command[1])
-                    server_message = client.recv(1012).decode("utf-8")
-                    if server_message.startswith("+OK"):
-                        server_message = server_message.split(" ")
-                        print(
-                            "Message: "
-                            + server_message[1]
-                            + " Size: "
-                            + server_message[2]
-                            + "\n"
-                        )
-                    else:
-                        print("Invalid message number.\n")
+                    client.sendall(("LIST " + command[1]).encode('utf-8'))
+                    incomming_data = client.recv(1012).decode()
+                    server_messages = [server_message for server_message in incomming_data.split('\r\n') if server_message != '']
+                    for server_message in server_messages:
+                        if server_message.startswith("+OK"):
+                            server_message = server_message.split(" ")
+                            print(
+                                "Message: "
+                                + server_message[1]
+                                + " Size: "
+                                + server_message[2]
+                                + "\n"
+                            )
+                        elif server_messages.startswith("-ERR"):
+                            print("Invalid message number.\n")
             else:
-                client.sendall("LIST")
-                server_message = client.recv(1012).decode("utf-8")
+                client.sendall(("LIST").encode())
+                server_message = client.recv(1012).decode()
                 if server_message == ".\r\n":
-                    print("No messages found.")
+                        print("No messages found.")
                 else:
-                    server_message = server_message.split(" ")
-                    print(
-                        "Message count: "
-                        + server_message[1]
-                        + " Size: "
-                        + server_message[2]
-                        + " octets\n"
-                    )
-                    server_message = client.recv(1012).decode("utf-8")
-                    while server_message != ".\r\n":
                         server_message = server_message.split(" ")
                         print(
-                            "Message: "
+                            "Message count: "
                             + server_message[1]
                             + " Size: "
-                            + server_message[2]
+                            + server_message[3][1:]
                             + " octets\n"
                         )
+                        end = False
+                        while not end:
+                            incomming_data = client.recv(1012).decode()
+                            server_messages = [server_message for server_message in incomming_data.split('\r\n') if server_message != '']    
+                            for server_message in server_messages:
+                                    if server_message == ".":
+                                        end = True
+                                    else:
+                                        server_message = server_message.split(" ")
+                                        print(
+                                            "Message: "
+                                            + server_message[0]
+                                            + " Size: "
+                                            + server_message[1]
+                                            + " octets\n"
+                                        )
         elif command.startswith("RETR"):
             command = command.split(" ")
-            if len(command < 2):
+            if len(command) < 2:
                 print("'RETR' command should have an argument.")
             elif not command[1].isnumeric():
                 print("Argument of 'RETR' should be integer")
             else:
-                client.sendall("RETR " + str(command[1]) + "\r\n")
-                server_message = client.recv(1012)
+                client.sendall(("RETR " + str(command[1])).encode())
+                server_message = client.recv(1012).decode()
                 if server_message.startswith("-ERR"):
                     print("Invalid message number.")
                 else:
-                    message = client.recv(1012).decode("utf-8")
-                    message = json.loads(message)
-                    print("From: " + message["From"] + "\n")
-                    print("To: " + message["To"] + "\n")
-                    print("Subject: " + message["Subject"] + "\n")
-                    print("Received: " + message["Received"] + "\n")
-                    print("Message: " + message["Body"] + "\n")
+                    message = ast.literal_eval(server_message[4:])
+                    print("From: " + message["From"])
+                    print("To: " + message["To"])
+                    print("Subject: " + message["Subject"])
+                    print("Received: " + message["Received"])
+                    print("Message: " + message["Body"])
         elif command.startswith("DELE"):
-            if len(command < 2):
+            if len(command) < 2:
                 print("'DELE' command should have an argument.")
-            elif not command[1].isnumeric():
+            elif not command.split(" ")[1].isnumeric():
                 print("Argument of 'DELE' should be integer")
             else:
-                client.sendall("DELE " + str(command[1]) + "\r\n")
-                server_message = client.recv(1012)
+                client.sendall(("DELE " + str(command.split(" ")[1]) + "\r\n").encode())
+                server_message = client.recv(1012).decode()
                 if server_message.startswith("-ERR"):
                     print("Invalid message number.")
                 else:
                     print("Message marked as 'deleted'.")
         elif command.startswith("RSET"):
-            client.sendall("RSET\r\n")
+            client.sendall(("RSET\r\n").encode())
         elif command.startswith("QUIT"):
             client.sendall(("QUIT").encode())
             return
         else:
-            print("Invalid command, please try again.\n")
+            print("Invalid command, please try again.")
 
 
 def mailSearching(ip):
-    succesfull, client = createConnection(ip, POP3_PORT)
+    username = input("Please insert username: ")
+    password = input("Please insert password: ")
+    succesfull, client = createConnectionPOP3(ip)
+    if not succesfull:
+        print(UNAVAILABLE_MESSAGE)
+        return
+    # Tries to authenticate on the POP3 server
+    succesfull = serverAuthentication(client, username, password)
+    
+    client.sendall("STAT".encode())
+    received = False
+    while not received:
+        incomming_data = client.recv(1012).decode()
+        server_messages = [server_message for server_message in incomming_data.split('\r\n') if server_message != '']
+        for server_message in server_messages:
+            if server_message.startswith("+OK") and server_message.split(" ")[1].isnumeric():
+                message_count = int(server_message.split(" ")[1])
+                received = True
+        
+    emails = []
 
-    # REQUEST ALL MAILS, geen idee wat dit commando hoort te zijn.
-    messages = client.recv(1012).decode("utf-8")
-    messages = json.load(messages)
-    print("Please choose one of the following options.\n")
+    for i in range(0, message_count):
+        client.sendall(("RETR " + str(i) + "\r\n").encode())
+        server_message = client.recv(1012).decode('utf-8')
+        if server_message.startswith("+OK"):
+            emails.append(ast.literal_eval(server_message[4:]))
+
+    print("Please choose one of the following options.")
     while True:
-        print("a) Word/sentences\nb) Time\nc) Address\n")
+        print("a) Word/sentences\nb) Time\nc) Address")
         action = input()
         if action == "a)":
             target = input("Search term: ")
-            for message in messages:
+            for message in emails:
                 if target in message["Body"] or target in message["Subject"]:
-                    print(message)
+                    print(message + "\n")
             return
         elif action == "b)":
             target = input("Search term: ")
-            for message in messages:
-                if target == message["Received"]:
-                    print(message)
-            return
+            if len(target.split("-")) != 3:
+                print("Search criteria for time should be of the form 'yyyy-mm-dd'")
+            elif len(target.split("-")[0]) != 4 or len(target.split("-")[1]) != 2 or len(target.split("-")[2]) != 2:
+                print("Search criteria for time should be of the form 'yyyy-mm-dd'")
+            else:
+                for message in emails:
+                    if target == message["Received"]:
+                        print(message + "\n")
+                return
         elif action == "c)":
             target = input("Search term: ")
-            for message in messages:
-                if target == message["From"] or target == message["To"]:
-                    print(message)
+            if len(target.split("@")) != 2:
+                print("Search criteria for time should be of the form <username@domainname>")
+            elif len(target.split("@")[1].split(".")) != 2:
+                print("Search criteria for time should be of the form <username@domainname>")
+            else:
+                for message in emails:
+                    if target == message["From"] or target == message["To"]:
+                        print(message + "\n")
         else:
             print("The requested action does not exist, please try again")
 

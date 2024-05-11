@@ -3,6 +3,7 @@ import socket
 import threading
 import json
 import datetime
+import time
 import filelock
 
 # Run server on localhost
@@ -72,6 +73,7 @@ def handle_client(client_socket: socket.socket, client_address: str):
 def process_buffer(data: str):
     print(f'Processing buffer: "{data}"')
     commands = [command for command in data.split('\r\n') if command != '']
+    print(commands)
     return commands
 
 

@@ -56,6 +56,7 @@ def handle_client(client_socket, client_address):
             elif command.startswith('RETR'):
                 email = process_retr_command(command, user)
                 if email:
+                    print(email)
                     client_socket.sendall(f"+OK {email}\r\n".encode())
                 else:
                     client_socket.sendall(b"-ERR No such message\r\n")
@@ -116,7 +117,7 @@ def process_stat_command(command: str, user):
         return len(data), total_bytes
 
 
-def process_list_command(command: str, user) -> [str]:
+def process_list_command(command: str, user) -> list[str]:
     # Check if there is a message number specified
     response = []
     acquire_lock(f'{user}/my_mailbox.json')
